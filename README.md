@@ -129,8 +129,9 @@ const anyEventElement = document.querySelector('[data-eventid]');
 
 ## 動作環境
 
-- Google Chrome 88以降
-- Chromium系ブラウザ（Edge、Brave等）でも動作する可能性があります
+- **推奨**: Google Chrome 88以降
+- **互換性**: Chromium系ブラウザ（Microsoft Edge、Brave等）でも動作する可能性があります
+- **対象サイト**: Google Calendar (https://calendar.google.com/)
 
 ## トラブルシューティング
 
