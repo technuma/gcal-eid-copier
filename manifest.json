@@ -9,6 +9,21 @@
   "host_permissions": [
     "https://calendar.google.com/*"
   ],
+  "action": {
+    "default_title": "イベントのEIDリンクをコピー"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "copy-eid": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+E",
+        "mac": "MacCtrl+Shift+E"
+      },
+      "description": "イベントのEIDリンクをコピー"
+    }
+  },
   "content_scripts": [
     {
       "matches": ["https://calendar.google.com/*"],
