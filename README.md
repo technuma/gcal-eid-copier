@@ -2,11 +2,10 @@
 
 GoogleカレンダーのイベントID（EID）リンクをキーボードショートカットで簡単にコピーできるChrome拡張機能です。
 
-**※ 現在、macOS専用です（Windows/Linuxは未対応）**
-
 ## 機能
 
 - **キーボードショートカット**: `Ctrl+Shift+E` でEIDリンクを即座にコピー
+- **ショートカットのカスタマイズ**: `chrome://extensions/shortcuts` で自由に変更可能
 - **視覚的フィードバック**: コピー成功時に画面上に通知を表示
 - **複数のフォールバック機構**: Googleカレンダーの構造変更に対応した堅牢なEID抽出
 - **クリップボードへの自動コピー**: `https://calendar.google.com/calendar/event?eid=...` 形式のリンクを自動生成
@@ -40,21 +39,34 @@ GoogleカレンダーのイベントID（EID）リンクをキーボードショ
 
 5. 画面上に「✓ EIDリンクをコピーしました」という緑色の通知が3秒間表示されます
 
+### ショートカットの変更
+
+1. アドレスバーに `chrome://extensions/shortcuts` を入力
+2. 「Google Calendar EID Copier」の「イベントのEIDリンクをコピー」欄をクリック
+3. 好きなキーの組み合わせを入力（`Ctrl` または `Alt` を含む必要があります）
+
 ## 主要な処理フロー
 
 ### 1. 拡張機能の初期化
 
-Googleカレンダーのページが読み込まれると、`content.js` と `styles.css` が自動的に注入されます（`manifest.json:12-19`）。`document_end` で実行されるため、DOMが完全に構築された後に処理が開始されます。
+Googleカレンダーのページが読み込まれると、`content.js` と `styles.css` が自動的に注入されます（`manifest.json` の `content_scripts`）。`document_end` で実行されるため、DOMが完全に構築された後に処理が開始されます。
 
 ### 2. キーボードショートカットの監視
 
-メインの処理は **`Ctrl+Shift+E`** のキーボードイベントを監視します（`content.js:70-97`）:
+キーボードショートカットは `chrome.commands` API（`manifest.json` の `commands`）で定義されており、押されると `background.js` がアクティブなタブの content script にメッセージを送信します:
 
 ```javascript
-document.addEventListener('keydown', (event) => {
-  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'E') {
-    // EIDをコピーする処理を実行
-  }
+// background.js
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== 'copy-eid') return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  await chrome.tabs.sendMessage(tab.id, { action: 'copy-eid' });
+});
+
+// content.js
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action !== 'copy-eid') return;
+  // EIDをコピーする処理を実行
 });
 ```
 
@@ -90,7 +102,8 @@ await navigator.clipboard.writeText(eidLink);
 ## ファイル構成
 
 ```
-├── manifest.json    # 拡張機能の設定（権限、コンテンツスクリプト）
+├── manifest.json    # 拡張機能の設定（権限、コマンド、コンテンツスクリプト）
+├── background.js    # キーボードショートカットの受信と転送
 ├── content.js       # メインロジック（EID抽出とコピー機能）
 ├── styles.css       # 通知UIのスタイル
 └── README.md        # このファイル
@@ -131,7 +144,7 @@ const anyEventElement = document.querySelector('[data-eventid]');
 
 ## 動作環境
 
-- **対応OS**: macOS専用（Windows/Linuxは未対応）
+- **対応OS**: Windows / macOS / Linux / ChromeOS
 - **推奨**: Google Chrome 88以降
 - **互換性**: Chromium系ブラウザ（Microsoft Edge、Brave等）でも動作する可能性があります
 - **対象サイト**: Google Calendar (https://calendar.google.com/)
@@ -141,9 +154,10 @@ const anyEventElement = document.querySelector('[data-eventid]');
 ### キーボードショートカットが動作しない場合
 
 1. 拡張機能が有効になっているか確認
-2. Googleカレンダーのページをリロード
-3. イベント詳細ダイアログが開いているか確認
-4. ブラウザのコンソール（F12）を開いて、ログやエラーメッセージを確認
+2. `chrome://extensions/shortcuts` でショートカットが割り当てられているか確認（他の拡張機能と競合すると未割り当てになることがあります）
+3. Googleカレンダーのページをリロード
+4. イベント詳細ダイアログが開いているか確認
+5. ブラウザのコンソール（F12）を開いて、ログやエラーメッセージを確認
    - `Google Calendar EID Copier が読み込まれました` というメッセージが表示されているか確認
 
 ### 「EIDが見つかりませんでした」と表示される場合
@@ -168,8 +182,8 @@ const anyEventElement = document.querySelector('[data-eventid]');
 拡張機能は以下のログを出力します:
 
 - `✅ Google Calendar EID Copier が読み込まれました`
-- `📌 キーボードショートカット: Ctrl+Shift+E でEIDをコピー`
-- `🎹 キーボードショートカット: Ctrl+Shift+E が押されました`
+- `📌 キーボードショートカット: Ctrl+Shift+E でEIDをコピー（chrome://extensions/shortcuts で変更可能）`
+- `🎹 キーボードショートカットが押されました`
 - `✅ EIDを検出: [eid]`
 - `✅ EIDリンクをクリップボードにコピーしました`
 
@@ -182,7 +196,7 @@ MIT License
 ### カスタマイズ
 
 - 通知のスタイルは `styles.css` で変更可能
-- キーボードショートカットは `content.js:70-97` で変更可能
+- キーボードショートカットは `chrome://extensions/shortcuts` で変更可能（デフォルト値は `manifest.json` の `commands` で定義）
 - EID抽出のロジックは `content.js:4-30` で変更可能
 
 ### ユーザビリティの特徴

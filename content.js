@@ -66,35 +66,33 @@ function showNotification(message, isSuccess = true) {
   }, 3000);
 }
 
-// キーボードショートカット: Ctrl+Shift+E (Mac: Cmd+Shift+E)
-document.addEventListener('keydown', (event) => {
-  // Ctrl+Shift+E (Windows/Linux) または Cmd+Shift+E (Mac)
-  if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'E') {
-    event.preventDefault();
+// キーボードショートカット（chrome.commands 経由）の受信
+// ショートカットは chrome://extensions/shortcuts で編集可能
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.action !== 'copy-eid') return;
 
-    console.log('🎹 キーボードショートカット: Ctrl+Shift+E が押されました');
+  console.log('🎹 キーボードショートカットが押されました');
 
-    const eid = extractEidFromDOM();
-    if (!eid) {
-      console.log('❌ EIDが見つかりませんでした');
-      showNotification('EIDが見つかりませんでした', false);
-      return;
-    }
-
-    console.log('✅ EIDを検出:', eid);
-
-    const eidLink = `https://calendar.google.com/calendar/event?eid=${eid}`;
-    copyToClipboard(eidLink).then((success) => {
-      if (success) {
-        console.log('✅ EIDリンクをクリップボードにコピーしました');
-        showNotification('✓ EIDリンクをコピーしました');
-      } else {
-        console.log('❌ クリップボードへのコピーに失敗しました');
-        showNotification('コピーに失敗しました', false);
-      }
-    });
+  const eid = extractEidFromDOM();
+  if (!eid) {
+    console.log('❌ EIDが見つかりませんでした');
+    showNotification('EIDが見つかりませんでした', false);
+    return;
   }
+
+  console.log('✅ EIDを検出:', eid);
+
+  const eidLink = `https://calendar.google.com/calendar/event?eid=${eid}`;
+  copyToClipboard(eidLink).then((success) => {
+    if (success) {
+      console.log('✅ EIDリンクをクリップボードにコピーしました');
+      showNotification('✓ EIDリンクをコピーしました');
+    } else {
+      console.log('❌ クリップボードへのコピーに失敗しました');
+      showNotification('コピーに失敗しました', false);
+    }
+  });
 });
 
 console.log('✅ Google Calendar EID Copier が読み込まれました');
-console.log('📌 キーボードショートカット: Ctrl+Shift+E (Mac: Cmd+Shift+E) でEIDをコピー');
+console.log('📌 キーボードショートカット: Ctrl+Shift+E でEIDをコピー（chrome://extensions/shortcuts で変更可能）');
